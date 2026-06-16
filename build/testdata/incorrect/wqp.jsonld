@@ -1,0 +1,257 @@
+{
+    "@context": {
+        "@vocab": "https://schema.org/",
+        "schema": "https://schema.org/",
+        "xsd": "https://www.w3.org/TR/xmlschema-2/#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "dc": "http://purl.org/dc/terms/",
+        "dcat": "https://www.w3.org/ns/dcat#",
+        "freq": "http://purl.org/cld/freq/",
+        "qudt": "http://qudt.org/schema/qudt/",
+        "qudt-units": "http://qudt.org/vocab/unit/",
+        "qudt-quantkinds": "http://qudt.org/vocab/quantitykind/",
+        "gsp": "http://www.opengis.net/ont/geosparql#",
+        "locType": "http://vocabulary.odm2.org/sitetype",
+        "odm2var": "http://vocabulary.odm2.org/variablename/",
+        "odm2varType": "http://vocabulary.odm2.org/variabletype/",
+        "hyf": "https://www.opengis.net/def/schema/hy_features/hyf/",
+        "skos": "https://www.opengis.net/def/schema/hy_features/hyf/HY_HydroLocationType",
+        "ssn": "http://www.w3.org/ns/ssn/",
+        "ssn-system": "http://www.w3.org/ns/ssn/systems/"
+    },
+    "@id": "https://geoconnex.us/iow/wqp/NALMS-F871468",
+    "@type": [
+        "hyf:HY_HydrometricFeature",
+        "hyf:HY_HydroLocation",
+        "Place"
+    ],
+    "hyf:HydroLocationType": "Lake",
+    "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "WQP Site identifier",
+        "value": "NALMS-F871468"
+    },
+    "name": "Bearcamp Pond Carroll County NH USA",
+    "provider": {
+        "url": "https://www.waterqualitydata.us/beta/",
+        "@type": "GovernmentOrganization",
+        "name": "North American Lake Management Society"
+    },
+    "geo": {
+        "@type": "schema:GeoCoordinates",
+        "schema:longitude": -71.37,
+        "schema:latitude": 43.816
+    },
+    "gsp:hasGeometry": {
+        "@type": "http://www.opengis.net/ont/sf#Point",
+        "gsp:asWKT": {
+            "@type": "http://www.opengis.net/ont/geosparql#wktLiteral",
+            "@value": "POINT (-71.37 43.816)"
+        },
+        "gsp:crs": {
+            "@id": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+        }
+    },
+    "hyf:referencedPosition": {
+        "hyf:HY_IndirectPosition": {
+            "hyf:linearElement": {
+                "@id": "https://geoconnex.us/ref/mainstems/2265852"
+            }
+        }
+    },
+    "hyf:containingCatchment": [
+        {
+            "@id": "https://geoconnex.us/ref/hu08/01060002"
+        }
+    ],
+    "gsp:sfWithin": [
+        {
+            "@id": "https://geoconnex.us/ref/counties/33003"
+        },
+        {
+            "@id": "https://geoconnex.us/ref/states/33"
+        }
+    ],
+    "subjectOf": [
+        {
+            "@type": "Dataset",
+            "name": "NALMS-F871468",
+            "description": "Turbidity at NALMS-F871468",
+            "provider": {
+                "url": "https://www.waterqualitydata.us/beta/",
+                "@type": "GovernmentOrganization",
+                "name": "North American Lake Management Society"
+            },
+            "url": "https://www.waterqualitydata.us/beta/provider/STORET/NALMS/NALMS-F871468/",
+            "variableMeasured": {
+                "@type": "PropertyValue",
+                "name": "Turbidity",
+                "description": "Turbidity in Jackson turbidity units",
+                "propertyID": "1640507",
+                "url": "https://cdxapps.epa.gov/oms-substance-registry-services/substance-details/1640507",
+                "unitText": "Jackson turbidity units",
+                "measurementTechnique": "observation",
+                "measurementMethod": {
+                    "name": "Turbidity Measurements",
+                    "publisher": "North American Lake Management Society"
+                }
+            },
+            "temporalCoverage": "2003-01-01T00:00:00Z/2004-12-31T00:00:00Z",
+            "distribution": [
+                {
+                    "@type": "DataDownload",
+                    "name": "Water Quality Portal",
+                    "contentUrl": "https://www.waterqualitydata.us/wqx3/Result/search?siteid=NALMS-F871468&characteristicName=Turbidity&mimeType=csv&dataProfile=fullPhysChem",
+                    "encodingFormat": [
+                        "text/comma-separated-values"
+                    ],
+                    "dc:conformsTo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                }
+            ]
+        },
+        {
+            "@type": "Dataset",
+            "name": "NALMS-F871468",
+            "description": "Weather condition (WMO code 4501) (choice list) at NALMS-F871468",
+            "provider": {
+                "url": "https://www.waterqualitydata.us/beta/",
+                "@type": "GovernmentOrganization",
+                "name": "North American Lake Management Society"
+            },
+            "url": "https://www.waterqualitydata.us/beta/provider/STORET/NALMS/NALMS-F871468/",
+            "variableMeasured": {
+                "@type": "PropertyValue",
+                "name": "Weather condition (WMO code 4501) (choice list)",
+                "description": "Weather condition (WMO code 4501) (choice list) in Unknown",
+                "propertyID": "1648286",
+                "url": "https://cdxapps.epa.gov/oms-substance-registry-services/substance-details/1648286",
+                "unitText": "Unknown",
+                "measurementTechnique": "observation",
+                "measurementMethod": {
+                    "name": "Weather condition (WMO code 4501) (choice list) Measurements",
+                    "publisher": "North American Lake Management Society"
+                }
+            },
+            "temporalCoverage": "1995-01-01T00:00:00Z/2018-12-31T00:00:00Z",
+            "distribution": [
+                {
+                    "@type": "DataDownload",
+                    "name": "Water Quality Portal",
+                    "contentUrl": "https://www.waterqualitydata.us/wqx3/Result/search?siteid=NALMS-F871468&characteristicName=Weather condition (WMO code 4501) (choice list)&mimeType=csv&dataProfile=fullPhysChem",
+                    "encodingFormat": [
+                        "text/comma-separated-values"
+                    ],
+                    "dc:conformsTo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                }
+            ]
+        },
+        {
+            "@type": "Dataset",
+            "name": "NALMS-F871468",
+            "description": "Temperature, water at NALMS-F871468",
+            "provider": {
+                "url": "https://www.waterqualitydata.us/beta/",
+                "@type": "GovernmentOrganization",
+                "name": "North American Lake Management Society"
+            },
+            "url": "https://www.waterqualitydata.us/beta/provider/STORET/NALMS/NALMS-F871468/",
+            "variableMeasured": {
+                "@type": "PropertyValue",
+                "name": "Temperature, water",
+                "description": "Temperature, water in degrees Celsius",
+                "propertyID": "1645597",
+                "url": "https://cdxapps.epa.gov/oms-substance-registry-services/substance-details/1645597",
+                "unitText": "degrees Celsius",
+                "measurementTechnique": "observation",
+                "measurementMethod": {
+                    "name": "Temperature, water Measurements",
+                    "publisher": "North American Lake Management Society"
+                }
+            },
+            "temporalCoverage": "2018-01-01T00:00:00Z/2018-12-31T00:00:00Z",
+            "distribution": [
+                {
+                    "@type": "DataDownload",
+                    "name": "Water Quality Portal",
+                    "contentUrl": "https://www.waterqualitydata.us/wqx3/Result/search?siteid=NALMS-F871468&characteristicName=Temperature, water&mimeType=csv&dataProfile=fullPhysChem",
+                    "encodingFormat": [
+                        "text/comma-separated-values"
+                    ],
+                    "dc:conformsTo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                }
+            ]
+        },
+        {
+            "@type": "Dataset",
+            "name": "NALMS-F871468",
+            "description": "Depth, Secchi disk depth at NALMS-F871468",
+            "provider": {
+                "url": "https://www.waterqualitydata.us/beta/",
+                "@type": "GovernmentOrganization",
+                "name": "North American Lake Management Society"
+            },
+            "url": "https://www.waterqualitydata.us/beta/provider/STORET/NALMS/NALMS-F871468/",
+            "variableMeasured": {
+                "@type": "PropertyValue",
+                "name": "Depth, Secchi disk depth",
+                "description": "Depth, Secchi disk depth in meters",
+                "propertyID": "1646140",
+                "url": "https://cdxapps.epa.gov/oms-substance-registry-services/substance-details/1646140",
+                "unitText": "meters",
+                "measurementTechnique": "observation",
+                "measurementMethod": {
+                    "name": "Depth, Secchi disk depth Measurements",
+                    "publisher": "North American Lake Management Society"
+                }
+            },
+            "temporalCoverage": "1995-01-01T00:00:00Z/2018-12-31T00:00:00Z",
+            "distribution": [
+                {
+                    "@type": "DataDownload",
+                    "name": "Water Quality Portal",
+                    "contentUrl": "https://www.waterqualitydata.us/wqx3/Result/search?siteid=NALMS-F871468&characteristicName=Depth, Secchi disk depth&mimeType=csv&dataProfile=fullPhysChem",
+                    "encodingFormat": [
+                        "text/comma-separated-values"
+                    ],
+                    "dc:conformsTo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                }
+            ]
+        },
+        {
+            "@type": "Dataset",
+            "name": "NALMS-F871468",
+            "description": "pH at NALMS-F871468",
+            "provider": {
+                "url": "https://www.waterqualitydata.us/beta/",
+                "@type": "GovernmentOrganization",
+                "name": "North American Lake Management Society"
+            },
+            "url": "https://www.waterqualitydata.us/beta/provider/STORET/NALMS/NALMS-F871468/",
+            "variableMeasured": {
+                "@type": "PropertyValue",
+                "name": "pH",
+                "description": "pH in Unknown",
+                "propertyID": "17028275",
+                "url": "https://cdxapps.epa.gov/oms-substance-registry-services/substance-details/17028275",
+                "unitText": "Unknown",
+                "measurementTechnique": "observation",
+                "measurementMethod": {
+                    "name": "pH Measurements",
+                    "publisher": "North American Lake Management Society"
+                }
+            },
+            "temporalCoverage": "2004-01-01T00:00:00Z/2004-12-31T00:00:00Z",
+            "distribution": [
+                {
+                    "@type": "DataDownload",
+                    "name": "Water Quality Portal",
+                    "contentUrlL": "https://www.waterqualitydata.us/wqx3/Result/search?siteid=NALMS-F871468&characteristicName=pH&mimeType=csv&dataProfile=fullPhysChem",
+                    "encodingFormat": [
+                        "text/comma-separated-values"
+                    ],
+                    "dc:conformsToooo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                }
+            ]
+        }
+    ]
+}

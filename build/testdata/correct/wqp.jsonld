@@ -249,7 +249,7 @@
                     "encodingFormat": [
                         "text/comma-separated-values"
                     ],
-                    "dc:conformsToooo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
+                    "dc:conformsTo": "https://www.waterqualitydata.us/beta/webservices_documentation/"
                 }
             ]
         }
