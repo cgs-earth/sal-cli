@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/alexflint/go-arg"
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/iceberg-go"
 	"github.com/apache/iceberg-go/catalog"
@@ -23,7 +23,6 @@ import (
 const defaultBatchSize = 131_072
 
 type loadConfig struct {
-	reset               bool
 	inputDir            string
 	batchSize           int
 	workers             int
@@ -32,12 +31,22 @@ type loadConfig struct {
 	targetFileSizeBytes int64
 }
 
+type cliArgs struct {
+	BatchSize           int    `arg:"--batch-size" help:"Arrow records per batch"`
+	Workers             int    `arg:"--workers" help:"number of input files to convert to Parquet in parallel"`
+	ParquetCompression  string `arg:"--compression" help:"Parquet compression codec: snappy, zstd, gzip, brotli, lz4, uncompressed"`
+	MetricsMode         string `arg:"--metrics-mode" help:"Iceberg metrics mode: none, counts, truncate(N), full"`
+	TargetFileSizeBytes int64  `arg:"--target-file-size-bytes" help:"target Iceberg data file size"`
+	InputDir            string `arg:"positional,required" placeholder:"PATH" help:"path to a directory containing .nq.gz files"`
+}
+
+func (cliArgs) Description() string {
+	return "Load N-Quads gzip files into a local Iceberg triples table."
+}
+
 type triple struct{ s, p, o string }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Usage: loader [--reset] [--workers N] [--batch-size N] [--compression CODEC] [--metrics-mode MODE] [--target-file-size-bytes N] <path-to-nq-gz-directory>")
-	}
 	cfg := parseArgs(os.Args[1:])
 
 	ctx := context.Background()
@@ -65,12 +74,10 @@ func main() {
 	)
 
 	tableIdent := catalog.ToIdentifier("default", "triples")
-	if cfg.reset {
-		if err := cat.DropTable(ctx, tableIdent); err != nil && !errors.Is(err, catalog.ErrNoSuchTable) {
-			log.Fatal("Failed to reset table:", err)
-		}
-		log.Println("Reset table default.triples")
+	if err := cat.DropTable(ctx, tableIdent); err != nil && !errors.Is(err, catalog.ErrNoSuchTable) {
+		log.Fatal("Failed to reset table:", err)
 	}
+	log.Println("Reset table default.triples")
 
 	partitionSpec := iceberg.NewPartitionSpec(
 		iceberg.PartitionField{SourceIDs: []int{2}, Transform: iceberg.TruncateTransform{Width: 20}, Name: "predicate_partition"},
@@ -98,7 +105,7 @@ func main() {
 		log.Print("Failed to create table, loading existing table:", err)
 		tbl, err = cat.LoadTable(ctx, tableIdent)
 		if err != nil {
-			log.Fatalf("Failed to load existing table: %v. If this table was created with compressed metadata during a previous run, rerun with --reset.", err)
+			log.Fatalf("Failed to load existing table: %v.", err)
 		}
 	} else {
 		log.Println("Table created successfully")
@@ -145,32 +152,36 @@ func main() {
 }
 
 func parseArgs(args []string) loadConfig {
-	fs := flag.NewFlagSet("loader", flag.ExitOnError)
-	cfg := loadConfig{}
-	fs.BoolVar(&cfg.reset, "reset", true, "drop and recreate the table before loading")
-	fs.IntVar(&cfg.batchSize, "batch-size", defaultBatchSize, "Arrow records per batch")
-	fs.IntVar(&cfg.workers, "workers", runtime.GOMAXPROCS(0), "number of input files to convert to Parquet in parallel")
-	fs.StringVar(&cfg.parquetCompression, "compression", "snappy", "Parquet compression codec: snappy, zstd, gzip, brotli, lz4, uncompressed")
-	fs.StringVar(&cfg.metricsMode, "metrics-mode", "truncate(16)", "Iceberg metrics mode: none, counts, truncate(N), full")
-	fs.Int64Var(&cfg.targetFileSizeBytes, "target-file-size-bytes", table.WriteTargetFileSizeBytesDefault, "target Iceberg data file size")
-
-	if err := fs.Parse(args); err != nil {
+	cli := cliArgs{
+		BatchSize:           defaultBatchSize,
+		Workers:             runtime.GOMAXPROCS(0),
+		ParquetCompression:  "snappy",
+		MetricsMode:         "truncate(16)",
+		TargetFileSizeBytes: table.WriteTargetFileSizeBytesDefault,
+	}
+	parser, err := arg.NewParser(arg.Config{Program: "loader"}, &cli)
+	if err != nil {
 		log.Fatal(err)
 	}
-	if fs.NArg() != 1 {
-		log.Fatal("Usage: loader [--reset] [--workers N] [--batch-size N] [--compression CODEC] [--metrics-mode MODE] [--target-file-size-bytes N] <path-to-nq-gz-directory>")
-	}
-	if cfg.batchSize <= 0 {
+	parser.MustParse(args)
+
+	if cli.BatchSize <= 0 {
 		log.Fatal("--batch-size must be positive")
 	}
-	if cfg.workers <= 0 {
+	if cli.Workers <= 0 {
 		log.Fatal("--workers must be positive")
 	}
-	if cfg.targetFileSizeBytes <= 0 {
+	if cli.TargetFileSizeBytes <= 0 {
 		log.Fatal("--target-file-size-bytes must be positive")
 	}
-	cfg.inputDir = fs.Arg(0)
-	return cfg
+	return loadConfig{
+		inputDir:            cli.InputDir,
+		batchSize:           cli.BatchSize,
+		workers:             cli.Workers,
+		parquetCompression:  cli.ParquetCompression,
+		metricsMode:         cli.MetricsMode,
+		targetFileSizeBytes: cli.TargetFileSizeBytes,
+	}
 }
 
 func applyWriteProperties(ctx context.Context, tbl *table.Table, props iceberg.Properties) error {

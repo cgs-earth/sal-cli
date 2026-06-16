@@ -3,7 +3,65 @@ package main
 import (
 	"strings"
 	"testing"
+
+	"github.com/apache/iceberg-go/table"
 )
+
+func TestParseArgs(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		got := parseArgs([]string{"/data/nquads"})
+
+		if !got.reset {
+			t.Fatal("parseArgs().reset = false, want true")
+		}
+		if got.inputDir != "/data/nquads" {
+			t.Fatalf("parseArgs().inputDir = %q, want %q", got.inputDir, "/data/nquads")
+		}
+		if got.batchSize != defaultBatchSize {
+			t.Fatalf("parseArgs().batchSize = %d, want %d", got.batchSize, defaultBatchSize)
+		}
+		if got.parquetCompression != "snappy" {
+			t.Fatalf("parseArgs().parquetCompression = %q, want snappy", got.parquetCompression)
+		}
+		if got.metricsMode != "truncate(16)" {
+			t.Fatalf("parseArgs().metricsMode = %q, want truncate(16)", got.metricsMode)
+		}
+		if got.targetFileSizeBytes != table.WriteTargetFileSizeBytesDefault {
+			t.Fatalf("parseArgs().targetFileSizeBytes = %d, want %d", got.targetFileSizeBytes, table.WriteTargetFileSizeBytesDefault)
+		}
+	})
+
+	t.Run("overrides", func(t *testing.T) {
+		got := parseArgs([]string{
+			"--reset=false",
+			"--workers=3",
+			"--batch-size=1024",
+			"--compression=zstd",
+			"--metrics-mode=counts",
+			"--target-file-size-bytes=2048",
+			"/data/nquads",
+		})
+
+		if got.reset {
+			t.Fatal("parseArgs().reset = true, want false")
+		}
+		if got.workers != 3 {
+			t.Fatalf("parseArgs().workers = %d, want 3", got.workers)
+		}
+		if got.batchSize != 1024 {
+			t.Fatalf("parseArgs().batchSize = %d, want 1024", got.batchSize)
+		}
+		if got.parquetCompression != "zstd" {
+			t.Fatalf("parseArgs().parquetCompression = %q, want zstd", got.parquetCompression)
+		}
+		if got.metricsMode != "counts" {
+			t.Fatalf("parseArgs().metricsMode = %q, want counts", got.metricsMode)
+		}
+		if got.targetFileSizeBytes != 2048 {
+			t.Fatalf("parseArgs().targetFileSizeBytes = %d, want 2048", got.targetFileSizeBytes)
+		}
+	})
+}
 
 func TestParseNQuadLine(t *testing.T) {
 	tests := []struct {
