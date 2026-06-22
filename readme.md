@@ -1,1 +1,11 @@
-This repo is a sample project for exploring representing triple pattern fragment data within Apache Iceberg.
+# sal-cli
+
+The sal-cli is a CLI tool for creating and validating RDF data products.
+
+This repository is currently a work in progress.
+
+## Installation
+
+```
+go install github.com/cgs-earth/sal-cli@latest
+```

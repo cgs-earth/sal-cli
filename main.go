@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	build "sal_cli/build"
-	"sal_cli/load"
+	"github.com/cgs-earth/sal-cli/build"
+	"github.com/cgs-earth/sal-cli/load"
 
 	"github.com/alexflint/go-arg"
 	_ "github.com/apache/iceberg-go/catalog/hadoop"
