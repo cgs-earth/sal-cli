@@ -21,7 +21,6 @@ import (
 
 	"github.com/cgs-earth/json-gold/ld"
 	"github.com/cgs-earth/sal-cli/build/vocab"
-	"github.com/knakk/rdf"
 	rdflibgo "github.com/tggo/goRDFlib"
 	"github.com/tggo/goRDFlib/turtle"
 )
@@ -817,27 +816,6 @@ func extractRDFXMLVocabularyTerms(base string, body []byte) (map[string]bool, er
 			continue
 		}
 		collectRDFXMLElementTerms(base, start, terms)
-	}
-}
-
-func extractTriplesVocabularyTerms(base string, body []byte, format rdf.Format) (map[string]bool, error) {
-	dec := rdf.NewTripleDecoder(bytes.NewReader(body), format)
-	if iri, err := rdf.NewIRI(vocabularyDocumentURL(base)); err == nil {
-		_ = dec.SetOption(rdf.Base, iri)
-	}
-
-	terms := map[string]bool{}
-	for {
-		triple, err := dec.Decode()
-		if err == io.EOF {
-			return terms, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		if subj, ok := triple.Subj.(rdf.IRI); ok {
-			terms[subj.String()] = true
-		}
 	}
 }
 

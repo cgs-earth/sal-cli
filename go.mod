@@ -6,9 +6,8 @@ require (
 	github.com/alexflint/go-arg v1.6.1
 	github.com/apache/arrow-go/v18 v18.6.0
 	github.com/apache/iceberg-go v0.5.1-0.20260512095853-be4cf4cfed61
-	github.com/knakk/rdf v0.0.0-20260317081859-15b52521cde6
+	github.com/cgs-earth/json-gold v0.0.0-20260622135313-62ce2b83a4a6
 	github.com/lmittmann/tint v1.1.3
-	github.com/piprate/json-gold v0.8.0
 	github.com/tggo/goRDFlib v0.1.12
 )
 
@@ -63,7 +62,6 @@ require (
 	github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab // indirect
 	github.com/cayleygraph/quad v1.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cgs-earth/json-gold v0.0.0-20260622135313-62ce2b83a4a6 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
