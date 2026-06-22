@@ -9,7 +9,6 @@ import (
 	"github.com/cgs-earth/sal-cli/load"
 
 	"github.com/alexflint/go-arg"
-	_ "github.com/apache/iceberg-go/catalog/hadoop"
 	"github.com/lmittmann/tint"
 )
 
