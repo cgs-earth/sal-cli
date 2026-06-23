@@ -22,7 +22,7 @@ func Run(cmd *InitCmd) error {
 	gitCmd := exec.Command("git", "remote")
 	out, err := gitCmd.Output()
 	if err != nil {
-		return fmt.Errorf("current directory is not a git repository", err)
+		return fmt.Errorf("current directory is not a git repository: %w", err)
 	}
 
 	if strings.TrimSpace(string(out)) == "" {
