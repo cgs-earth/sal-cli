@@ -27,19 +27,24 @@ type LoadCmd struct {
 	Namespace           string `arg:"--namespace" help:"Iceberg namespace" default:"default"`
 }
 
-func Run(cfg *LoadCmd) {
+func Run(cfg *LoadCmd) error {
 
 	ctx := context.Background()
+
+	arrowSchema, icebergSchema, err := GetSchemas()
+	if err != nil {
+		return err
+	}
 
 	cat, err := hadoop.NewCatalog("local-catalog", cfg.Warehouse, nil)
 	if err != nil {
 		log.Fatal("Failed to create catalog:", err)
 	}
 
-	tbl, err := NewIcebergTableFromCfg(ctx, cat, cfg)
+	tbl, err := NewIcebergTableFromCfg(ctx, icebergSchema, cat, cfg)
 	if err != nil {
 		slog.Error("Failed to create Iceberg table", "err", err)
-		return
+		return err
 	}
 
 	pattern := filepath.Join(cfg.InputDir, "*.nq.gz")
@@ -49,7 +54,7 @@ func Run(cfg *LoadCmd) {
 	}
 	if len(files) == 0 {
 		slog.Error("No .nq.gz files found", "input_dir", cfg.InputDir)
-		return
+		return err
 	}
 	if cfg.MaxFiles > 0 && len(files) > cfg.MaxFiles {
 		files = files[:cfg.MaxFiles]
@@ -69,6 +74,7 @@ func Run(cfg *LoadCmd) {
 
 	log.Println("All files loaded successfully.")
 	log.Println("Table location:", tbl.Location())
+	return nil
 }
 
 // processFiles writes each .nq.gz input to Iceberg data files in parallel, then
@@ -94,6 +100,10 @@ func processFiles(
 	if len(dataFiles) == 0 {
 		return fmt.Errorf("no triples found")
 	}
+	dataFiles, err = assignFirstRowIDs(tbl.Spec(), dataFiles, tbl.Metadata().NextRowID())
+	if err != nil {
+		return err
+	}
 
 	txn := tbl.NewTransaction()
 	if err := txn.AddDataFiles(ctx, dataFiles, iceberg.Properties(nil), table.WithoutDuplicateCheck()); err != nil {
@@ -105,6 +115,89 @@ func processFiles(
 
 	log.Printf("  committed %d parquet data file(s) with %d triples in one snapshot", len(dataFiles), rows)
 	return nil
+}
+
+// assignFirstRowIDs gives v3 Iceberg appends a stable row-id range for each data file.
+func assignFirstRowIDs(spec *iceberg.PartitionSpec, dataFiles []iceberg.DataFile, nextRowID int64) ([]iceberg.DataFile, error) {
+	assigned := make([]iceberg.DataFile, 0, len(dataFiles))
+	for _, dataFile := range dataFiles {
+		if dataFile.FirstRowID() != nil {
+			assigned = append(assigned, dataFile)
+			nextRowID = *dataFile.FirstRowID() + dataFile.Count()
+			continue
+		}
+
+		rebuilt, err := rebuildDataFileWithFirstRowID(spec, dataFile, nextRowID)
+		if err != nil {
+			return nil, err
+		}
+		assigned = append(assigned, rebuilt)
+		nextRowID += dataFile.Count()
+	}
+	return assigned, nil
+}
+
+func rebuildDataFileWithFirstRowID(spec *iceberg.PartitionSpec, dataFile iceberg.DataFile, firstRowID int64) (iceberg.DataFile, error) {
+	builder, err := iceberg.NewDataFileBuilder(
+		*spec,
+		dataFile.ContentType(),
+		dataFile.FilePath(),
+		dataFile.FileFormat(),
+		dataFile.Partition(),
+		nil,
+		nil,
+		dataFile.Count(),
+		dataFile.FileSizeBytes(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("rebuild data file %s: %w", dataFile.FilePath(), err)
+	}
+
+	builder.FirstRowID(firstRowID)
+	if sizes := dataFile.ColumnSizes(); sizes != nil {
+		builder.ColumnSizes(sizes)
+	}
+	if counts := dataFile.ValueCounts(); counts != nil {
+		builder.ValueCounts(counts)
+	}
+	if counts := dataFile.NullValueCounts(); counts != nil {
+		builder.NullValueCounts(counts)
+	}
+	if counts := dataFile.NaNValueCounts(); counts != nil {
+		builder.NaNValueCounts(counts)
+	}
+	if counts := dataFile.DistinctValueCounts(); counts != nil {
+		builder.DistinctValueCounts(counts)
+	}
+	if bounds := dataFile.LowerBoundValues(); bounds != nil {
+		builder.LowerBoundValues(bounds)
+	}
+	if bounds := dataFile.UpperBoundValues(); bounds != nil {
+		builder.UpperBoundValues(bounds)
+	}
+	if key := dataFile.KeyMetadata(); key != nil {
+		builder.KeyMetadata(key)
+	}
+	if offsets := dataFile.SplitOffsets(); offsets != nil {
+		builder.SplitOffsets(offsets)
+	}
+	if ids := dataFile.EqualityFieldIDs(); ids != nil {
+		builder.EqualityFieldIDs(ids)
+	}
+	if id := dataFile.SortOrderID(); id != nil {
+		builder.SortOrderID(*id)
+	}
+	if referenced := dataFile.ReferencedDataFile(); referenced != nil {
+		builder.ReferencedDataFile(*referenced)
+	}
+	if offset := dataFile.ContentOffset(); offset != nil {
+		builder.ContentOffset(*offset)
+	}
+	if size := dataFile.ContentSizeInBytes(); size != nil {
+		builder.ContentSizeInBytes(*size)
+	}
+
+	return builder.Build(), nil
 }
 
 func writeFilesInParallel(

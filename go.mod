@@ -10,6 +10,7 @@ require (
 	github.com/lmittmann/tint v1.1.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tggo/goRDFlib v0.1.12
+	github.com/twpayne/go-geom v1.6.1
 )
 
 require (

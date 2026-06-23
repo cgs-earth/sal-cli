@@ -3,16 +3,23 @@ package load
 import (
 	"bufio"
 	"compress/gzip"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	"github.com/apache/arrow-go/v18/arrow/memory"
+	geoarrow "github.com/geoarrow/geoarrow-go"
+	"github.com/twpayne/go-geom/encoding/wkb"
+	"github.com/twpayne/go-geom/encoding/wkt"
 )
+
+const geoSPARQLWKTLiteral = "http://www.opengis.net/ont/geosparql#wktLiteral"
 
 type nquadRecordReader struct {
 	refCount atomic.Int64
@@ -104,10 +111,11 @@ func (r *nquadRecordReader) nextBatch() (arrow.RecordBatch, error) {
 		if !ok {
 			break
 		}
-
 		builder.Field(0).(*array.StringBuilder).Append(t.s)
 		builder.Field(1).(*array.StringBuilder).Append(t.p)
-		builder.Field(2).(*array.StringBuilder).Append(t.o)
+		if err := appendObjectFields(builder, t); err != nil {
+			return nil, fmt.Errorf("serialize object for %s %s: %w", t.s, t.p, err)
+		}
 		count++
 		r.rows++
 	}
@@ -116,6 +124,65 @@ func (r *nquadRecordReader) nextBatch() (arrow.RecordBatch, error) {
 	}
 
 	return builder.NewRecordBatch(), nil
+}
+
+// appendObjectFields serializes an RDF object into the Iceberg object union columns.
+func appendObjectFields(builder *array.RecordBuilder, t triple) error {
+	objectIRI := builder.Field(2).(*array.StringBuilder)
+	objectString := builder.Field(3).(*array.StringBuilder)
+	objectGeometry := builder.Field(4).(*geoarrow.WKBBuilder)
+
+	if t.oKind == objectKindIRI {
+		objectIRI.Append(t.o)
+		objectString.AppendNull()
+		objectGeometry.AppendNull()
+		return nil
+	}
+
+	if isWKTObject(t) {
+		wkbBytes, err := wktObjectToWKB(t.o)
+		if err != nil {
+			return err
+		}
+		objectIRI.AppendNull()
+		objectString.AppendNull()
+		objectGeometry.Append(geoarrow.WKBBytes(wkbBytes))
+		return nil
+	}
+
+	objectIRI.AppendNull()
+	objectString.Append(t.o)
+	objectGeometry.AppendNull()
+	return nil
+}
+
+func isWKTObject(t triple) bool {
+	return t.oKind == objectKindLiteral && t.oDatatype == geoSPARQLWKTLiteral
+}
+
+// wktObjectToWKB converts a GeoSPARQL WKT literal value into WKB bytes.
+func wktObjectToWKB(value string) ([]byte, error) {
+	geom, err := wkt.Unmarshal(stripGeoSPARQLCRS(value))
+	if err != nil {
+		return nil, fmt.Errorf("parse WKT %q: %w", value, err)
+	}
+	wkbBytes, err := wkb.Marshal(geom, binary.LittleEndian)
+	if err != nil {
+		return nil, fmt.Errorf("marshal WKB: %w", err)
+	}
+	return wkbBytes, nil
+}
+
+func stripGeoSPARQLCRS(value string) string {
+	value = strings.TrimSpace(value)
+	if !strings.HasPrefix(value, "<") {
+		return value
+	}
+	end := strings.Index(value, ">")
+	if end == -1 {
+		return value
+	}
+	return strings.TrimSpace(value[end+1:])
 }
 
 func (r *nquadRecordReader) nextTriple() (triple, bool, error) {
