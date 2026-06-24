@@ -7,5 +7,5 @@ This repository is currently a work in progress.
 ## Installation
 
 ```
-go install github.com/cgs-earth/sal-cli@latest
+go install github.com/cgs-earth/sal@latest
 ```
