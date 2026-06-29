@@ -1,0 +1,9 @@
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<Alice>
+    a schema:Person ;
+    schema:name "Alice" ;
+    schema:birthDate "1995-01-15"^^xsd:date ;
+    schema:email <mailto:alice@example.org> ;
+    schema:worksFor <org/acme> .

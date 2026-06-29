@@ -50,9 +50,29 @@ func DefaultGitRemote() (string, error) {
 	return remoteURL, nil
 }
 
-// FindSALProjectDir walks up from the current directory to find the nearest
+func DefaultSalBase() (string, error) {
+	remote, err := DefaultGitRemote()
+	if err != nil {
+		return "", err
+	}
+	remote = strings.TrimSuffix(remote, ".git")
+	if !strings.HasSuffix(remote, "/") {
+		remote += "/"
+	}
+	return remote, nil
+}
+
+func GitProjectName() (string, error) {
+	remote, err := DefaultGitRemote()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(filepath.Base(remote), ".git"), nil
+}
+
+// SALProjectDir walks up from the current directory to find the nearest
 // project-local .sal directory without crossing the user's home directory.
-func FindSALProjectDir(getHomeDir func() (string, error)) (string, error) {
+func SALProjectDir(getHomeDir func() (string, error)) (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current directory: %w", err)
@@ -90,6 +110,14 @@ func FindSALProjectDir(getHomeDir func() (string, error)) (string, error) {
 	}
 
 	return "", ErrSalDirNotFound
+}
+
+func SalDataDir() (string, error) {
+	salDir, err := SALProjectDir(os.UserHomeDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(salDir, ".sal", "data"), nil
 }
 
 func canonicalPath(path string) (string, error) {

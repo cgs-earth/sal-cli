@@ -17,7 +17,7 @@ func TestFindSALProjectDirFindsNearestProjectDirBelowHome(t *testing.T) {
 	require.NoError(t, os.MkdirAll(nested, 0755))
 	chdir(t, nested)
 
-	got, err := FindSALProjectDir(func() (string, error) {
+	got, err := SALProjectDir(func() (string, error) {
 		return home, nil
 	})
 
@@ -34,7 +34,7 @@ func TestFindSALProjectDirFailsForHomeSALDir(t *testing.T) {
 	require.NoError(t, os.MkdirAll(nested, 0755))
 	chdir(t, nested)
 
-	got, err := FindSALProjectDir(func() (string, error) {
+	got, err := SALProjectDir(func() (string, error) {
 		return home, nil
 	})
 
@@ -50,7 +50,7 @@ func TestFindSALProjectDirDoesNotSearchAboveHome(t *testing.T) {
 	require.NoError(t, os.MkdirAll(nested, 0755))
 	chdir(t, nested)
 
-	got, err := FindSALProjectDir(func() (string, error) {
+	got, err := SALProjectDir(func() (string, error) {
 		return home, nil
 	})
 

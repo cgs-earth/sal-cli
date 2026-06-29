@@ -15,14 +15,16 @@ import (
 	"strings"
 
 	"github.com/cgs-earth/json-gold/ld"
-	salpkg "github.com/cgs-earth/sal/pkg"
+	"github.com/cgs-earth/sal/pkg"
 	rdflibgo "github.com/tggo/goRDFlib"
+	"github.com/tggo/goRDFlib/nq"
 	"github.com/tggo/goRDFlib/turtle"
 )
 
 type BuildCmd struct {
 	Paths      []string `arg:"positional" help:"RDF files to validate"`
 	PrefixMaps []string `arg:"--prefix-maps" help:"prefix mappings to apply as source target pairs or source=target entries"`
+	Format     string   `arg:"--format" help:"format of input files" default:"nq"`
 }
 
 type jsonLDContext struct {
@@ -39,7 +41,7 @@ type usedTerm struct {
 	line int
 }
 
-var findSALProjectDir = salpkg.FindSALProjectDir
+var findSALProjectDir = pkg.SALProjectDir
 
 // Run validates RDF files for terms that are not defined by their vocabularies and returns their merged RDF graph.
 func Run(cfg *BuildCmd) (*rdflibgo.Graph, error) {
@@ -57,11 +59,36 @@ func Run(cfg *BuildCmd) (*rdflibgo.Graph, error) {
 			return nil, err
 		}
 	}
-	base, err := salpkg.DefaultGitRemote()
+	base, err := pkg.DefaultSalBase()
 	if err != nil {
 		return nil, err
 	}
-	return run(paths, ld.NewDefaultDocumentLoader(nil), fetch, base)
+	graph, err := run(paths, ld.NewDefaultDocumentLoader(nil), fetch, base)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.Format == "nq" {
+		dataDir, err := pkg.SalDataDir()
+		if err != nil {
+			return nil, err
+		}
+		gitProject, err := pkg.GitProjectName()
+		if err != nil {
+			return nil, err
+		}
+		fullOutPath := filepath.Join(dataDir, fmt.Sprintf("%s.nq", gitProject))
+		file, err := os.Create(fullOutPath)
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = file.Close() }()
+
+		err = nq.Serialize(graph, file)
+		if err == nil {
+			slog.Info("Saved built RDF data to " + fullOutPath)
+		}
+	}
+	return graph, err
 }
 
 func buildPaths(paths []string) ([]string, error) {
