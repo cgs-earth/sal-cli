@@ -99,7 +99,6 @@ func TestRunReportsUndefinedTermFromArbitraryVocabulary(t *testing.T) {
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		exampleVocabularyFetch,
 		testBuildBase,
 	)
@@ -124,7 +123,6 @@ func TestRunValidatesArbitraryVocabularyTerm(t *testing.T) {
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		exampleVocabularyFetch,
 		testBuildBase,
 	)
@@ -143,7 +141,6 @@ ex:Known ex:Known ex:Known ,
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		exampleVocabularyFetch,
 		testBuildBase,
 	)
@@ -168,7 +165,6 @@ ex:Known ex:Known ex:Known .
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		exampleVocabularyFetch,
 		testBuildBase,
 	)
@@ -186,7 +182,6 @@ func TestRunValidatesBuiltinXSDDatatype(t *testing.T) {
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		func(u string) ([]byte, string, error) { return nil, "", fmt.Errorf("unexpected url %s", u) },
 		testBuildBase,
 	)
@@ -219,7 +214,7 @@ func TestRunValidatesJSONLDTestdata(t *testing.T) {
 
 		for _, path := range paths {
 			t.Run(filepath.ToSlash(path), func(t *testing.T) {
-				_, err := run([]string{path}, schemaOrgTestLoader{}, schemaOrgVocabularyFetch, testBuildBase)
+				_, err := run([]string{path}, schemaOrgVocabularyFetch, testBuildBase)
 				if tc.wantErr {
 					require.Error(t, err)
 				} else {
@@ -240,7 +235,6 @@ func TestRunReportsUnknownXSDDatatypeAsUndefinedTerm(t *testing.T) {
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		func(u string) ([]byte, string, error) { return nil, "", fmt.Errorf("unexpected url %s", u) },
 		testBuildBase,
 	)
@@ -262,7 +256,6 @@ ex:Alice ex:name "Alice" .
 
 	_, err := run(
 		[]string{path},
-		exampleVocabularyLoader{},
 		func(u string) ([]byte, string, error) {
 			if u != "http://example.org/" {
 				return nil, "", fmt.Errorf("unexpected url %s", u)
@@ -290,7 +283,7 @@ func TestRunExpandsInputDirectories(t *testing.T) {
 }`)
 	writeTestFile(t, filepath.Join(dir, "skip.ttl"), "@prefix ex: <https://example.com/> .\n")
 
-	_, err := run([]string{dir}, schemaOrgTestLoader{}, schemaOrgVocabularyFetch, testBuildBase)
+	_, err := run([]string{dir}, schemaOrgVocabularyFetch, testBuildBase)
 	require.NoError(t, err)
 }
 
@@ -305,7 +298,7 @@ ex:Known ex:Known "one" .
 ex:Known ex:Known "two" .
 `)
 
-	graph, err := run([]string{dir}, exampleVocabularyLoader{}, exampleVocabularyFetch, testBuildBase)
+	graph, err := run([]string{dir}, exampleVocabularyFetch, testBuildBase)
 
 	require.NoError(t, err)
 	require.NotNil(t, graph)
@@ -729,22 +722,6 @@ func schemaOrgTurtleVocabulary(base string) string {
 		fmt.Fprintf(&b, "schemah:%s a schemah:Class .\n", term)
 	}
 	return b.String()
-}
-
-type exampleVocabularyLoader struct{}
-
-func (exampleVocabularyLoader) LoadDocument(u string) (*ld.RemoteDocument, error) {
-	if u == "https://example.com/context" {
-		return &ld.RemoteDocument{
-			DocumentURL: u,
-			Document: map[string]any{
-				"@context": map[string]any{
-					"ex": "https://example.com/vocab#",
-				},
-			},
-		}, nil
-	}
-	return ld.NewDefaultDocumentLoader(nil).LoadDocument(u)
 }
 
 func exampleVocabularyFetch(u string) ([]byte, string, error) {

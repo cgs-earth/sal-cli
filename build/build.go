@@ -66,7 +66,7 @@ func Run(cfg *BuildCmd) (*rdflibgo.Graph, error) {
 		return nil, err
 	}
 	ctx := context.Background()
-	graph, err := run(paths, ld.NewDefaultDocumentLoader(nil), fetch, base)
+	graph, err := run(paths, fetch, base)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func buildPaths(paths []string) ([]string, error) {
 	return []string{projectDir}, nil
 }
 
-func run(paths []string, loader ld.DocumentLoader, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func run(paths []string, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
 	files, err := expandInputs(paths)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func run(paths []string, loader ld.DocumentLoader, vocabFetch func(string) ([]by
 	finalGraph := rdflibgo.NewGraph(rdflibgo.WithBase(base))
 	var errs multiError
 	for _, file := range files {
-		graph, err := validateRDFFile(file, loader, vocabFetch, base)
+		graph, err := validateRDFFile(file, vocabFetch, base)
 		if err != nil {
 			if nested, ok := err.(multiError); ok {
 				errs = append(errs, nested...)
@@ -202,12 +202,12 @@ func includeRDFInput(path string) bool {
 	return ext == ".jsonld" || ext == ".json" || ext == ".ttl" || ext == ".turtle"
 }
 
-func validateRDFFile(path string, loader ld.DocumentLoader, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func validateRDFFile(path string, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".ttl", ".turtle":
 		return validateTurtleFile(path, vocabFetch, base)
 	default:
-		return validateJSONLDFile(path, loader, vocabFetch, base)
+		return validateJSONLDFile(path, ld.NewDefaultDocumentLoader(nil), vocabFetch, base)
 	}
 }
 
@@ -234,7 +234,7 @@ func validateJSONLDFile(path string, loader ld.DocumentLoader, vocabFetch func(s
 	if err := validateTerms(path, terms, ctx, vocabFetch, base); err != nil {
 		return nil, err
 	}
-	_, graph, err := serializeRdfDataAndGetVocabWithLoader("application/ld+json", content, base, loader)
+	_, graph, err := serializeRdfDataAndGetVocab("application/ld+json", content, base)
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid JSON-LD: %w", path, err)
 	}
@@ -537,13 +537,8 @@ func vocabularyDocumentURL(base string) string {
 	return base
 }
 
-// serialize rdf data into a graph and get the vocab terms for validation
-func serializeRdfDataAndGetVocab(contentType string, body []byte, base string) (map[string]bool, *rdflibgo.Graph, error) {
-	return serializeRdfDataAndGetVocabWithLoader(contentType, body, base, nil)
-}
-
 // serializeRdfDataAndGetVocabWithLoader parses RDF with an optional JSON-LD document loader.
-func serializeRdfDataAndGetVocabWithLoader(contentType string, body []byte, base string, loader ld.DocumentLoader) (map[string]bool, *rdflibgo.Graph, error) {
+func serializeRdfDataAndGetVocab(contentType string, body []byte, base string) (map[string]bool, *rdflibgo.Graph, error) {
 	parsersToTry := []RDFFormat{}
 
 	mediaType, _, _ := mime.ParseMediaType(contentType)
@@ -568,7 +563,7 @@ func serializeRdfDataAndGetVocabWithLoader(contentType string, body []byte, base
 
 	var errs []string
 	for _, parser := range parsersToTry {
-		graph, err := parseRdf(body, base, parser, loader)
+		graph, err := parseRdf(body, base, parser)
 		if err == nil {
 			terms := extractVocabularyTermsFromGraph(graph)
 			return terms, graph, nil

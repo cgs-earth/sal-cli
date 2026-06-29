@@ -1,0 +1,9 @@
+{
+    "@context": "http://schema.org/",
+    "@type": "Person",
+    "@id": "Bob",
+    "name": "Jane Doe",
+    "jobTitle": "Professor",
+    "telephone": "(425) 123-4567",
+    "urlL": "http://www.janedoe.com"    
+}
