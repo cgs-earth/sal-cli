@@ -98,7 +98,7 @@ func buildPaths(paths []string) ([]string, error) {
 	return []string{projectDir}, nil
 }
 
-func run(paths []string, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func run(paths []string, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
 	files, err := expandInputs(paths)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func run(paths []string, vocabFetch func(string) ([]byte, string, error), base s
 	finalGraph := rdflibgo.NewGraph(rdflibgo.WithBase(base))
 	var errs multiError
 	for _, file := range files {
-		graph, err := validateRDFFile(file, vocabFetch, base)
+		graph, err := validateRDFFile(file, vocabsToReplace, base)
 		if err != nil {
 			if nested, ok := err.(multiError); ok {
 				errs = append(errs, nested...)
@@ -167,16 +167,16 @@ func includeRDFInput(path string) bool {
 	return ext == ".jsonld" || ext == ".json" || ext == ".ttl" || ext == ".turtle"
 }
 
-func validateRDFFile(path string, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func validateRDFFile(path string, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".ttl", ".turtle":
-		return validateTurtleFile(path, vocabFetch, base)
+		return validateTurtleFile(path, vocabsToReplace, base)
 	default:
-		return validateJSONLDFile(path, ld.NewDefaultDocumentLoader(nil), vocabFetch, base)
+		return validateJSONLDFile(path, ld.NewDefaultDocumentLoader(nil), vocabsToReplace, base)
 	}
 }
 
-func validateJSONLDFile(path string, loader ld.DocumentLoader, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func validateJSONLDFile(path string, loader ld.DocumentLoader, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("build: read %s: %w", path, err)
@@ -196,7 +196,7 @@ func validateJSONLDFile(path string, loader ld.DocumentLoader, vocabFetch func(s
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid JSON-LD: %w", path, err)
 	}
-	if err := validateTerms(path, terms, ctx, vocabFetch, base); err != nil {
+	if err := validateTerms(path, terms, ctx, vocabsToReplace, base); err != nil {
 		return nil, err
 	}
 	_, graph, err := serializeRdfDataAndGetVocab("application/ld+json", content, base)
@@ -206,7 +206,7 @@ func validateJSONLDFile(path string, loader ld.DocumentLoader, vocabFetch func(s
 	return graph, nil
 }
 
-func validateTurtleFile(path string, vocabFetch func(string) ([]byte, string, error), base string) (*rdflibgo.Graph, error) {
+func validateTurtleFile(path string, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("build: read %s: %w", path, err)
