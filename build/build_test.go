@@ -239,7 +239,7 @@ func TestRunValidatesJSONLDTestdata(t *testing.T) {
 			return nil
 		})
 		require.NoError(t, err)
-		require.Empty(t, paths)
+		require.NotEmpty(t, paths)
 
 		for _, path := range paths {
 			t.Run(filepath.ToSlash(path), func(t *testing.T) {

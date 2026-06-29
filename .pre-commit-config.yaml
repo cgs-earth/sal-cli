@@ -4,7 +4,7 @@
 minimum_pre_commit_version: "2.9.0"
 ci:
   autoupdate_schedule: monthly
-  skip: [golang lint, gofmt]
+  skip: [golang lint, gofmt, gotest]
 repos:
   - repo: meta
     hooks:
@@ -42,6 +42,12 @@ repos:
       - id: golang lint
         name: Lint go code
         entry: golangci-lint run
+        language: system
+        types: [go]
+        pass_filenames: false # lint handles files itself
+      - id: gotest
+        name: Test go test
+        entry: go test ./...
         language: system
         types: [go]
         pass_filenames: false # lint handles files itself
