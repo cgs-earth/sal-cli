@@ -449,24 +449,31 @@ func extractVocabularyTerms(base, contentType string, body []byte) (map[string]b
 	}
 
 	mediaType, _, _ := mime.ParseMediaType(contentType)
-	parsers := []parserFn{
-		{name: "json-ld", fn: extractJSONLDVocabularyTerms},
-		{name: "turtle", fn: extractTurtleVocabularyTerms},
-		{name: "rdfxml", fn: extractRDFXMLVocabularyTerms},
-	}
+	jsonLDParser := parserFn{name: "json-ld", fn: extractJSONLDVocabularyTerms}
+	turtleParser := parserFn{name: "turtle", fn: extractTurtleVocabularyTerms}
+	rdfXMLParser := parserFn{name: "rdfxml", fn: extractRDFXMLVocabularyTerms}
 
+	var parsers []parserFn
 	switch {
 	case mediaType == "application/ld+json" || mediaType == "application/json" || strings.HasSuffix(mediaType, "+json"):
-		parsers = parsers[:1]
+		parsers = []parserFn{jsonLDParser}
 	case mediaType == "text/turtle" || mediaType == "application/n-triples" || mediaType == "application/n-quads":
-		parsers = parsers[1:2]
+		parsers = []parserFn{turtleParser}
 	case mediaType == "application/rdf+xml" || strings.HasSuffix(mediaType, "+xml"):
-		parsers = parsers[2:]
+		parsers = []parserFn{rdfXMLParser}
+
+	// if it looks like a specific RDF format,
+	// you default to parsing that option first,
+	// but also fall back to the other options if needed
+	// (i.e. if the input has no content type)
 	case looksLikeJSON(body):
+		parsers = []parserFn{jsonLDParser, turtleParser, rdfXMLParser}
 	case strings.Contains(mediaType, "xml"):
-		parsers[0], parsers[1], parsers[2] = parsers[2], parsers[0], parsers[1]
+		parsers = []parserFn{rdfXMLParser, jsonLDParser, turtleParser}
 	case looksLikeTurtle(body):
-		parsers[0], parsers[1] = parsers[1], parsers[0]
+		parsers = []parserFn{turtleParser, jsonLDParser, rdfXMLParser}
+	default:
+		parsers = []parserFn{jsonLDParser, turtleParser, rdfXMLParser}
 	}
 
 	var errs []string
