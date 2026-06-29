@@ -17,6 +17,7 @@ SAL, (semantic accessibility layer), is a CLI tool for creating RDF data and met
 - If some functionality would be very complex, duplicative, and better handled by an underlying library like json-gold or goRDFlib, say so and mark it as TODO in the code.
 - Any function with functionality that is non trivial should be documented with a succinct comment of what it does.
 - Don't create functions that are very small and only used in a single place.
+- Do not use table oriented tests; make each test case a separate test function so it is easier to debug
 
 ## Development 
 

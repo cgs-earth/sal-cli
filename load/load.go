@@ -259,7 +259,7 @@ func writeGraph(
 		return nil, 0, fmt.Errorf("read graph: %w", err)
 	}
 
-	slog.Info("Successfully wrote to iceberg table with" + fmt.Sprint(len(dataFiles)) + " data files and " + fmt.Sprint(rdr.RowsRead()) + " triples")
+	slog.Info("Successfully wrote to iceberg table with " + fmt.Sprint(len(dataFiles)) + " data files and " + fmt.Sprint(rdr.RowsRead()) + " triples")
 	return dataFiles, rdr.RowsRead(), nil
 }
 

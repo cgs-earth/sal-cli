@@ -2,7 +2,7 @@
     "@context": "http://schema.org/",
     "@type": "Person",
     "@id": "Bob",
-    "namee": "Jane Doe",
+    "name": "Jane Doe",
     "jobTitle": "Professor",
     "telephone": "(425) 123-4567",
     "url": "http://www.janedoe.com"

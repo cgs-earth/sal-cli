@@ -35,7 +35,7 @@ func turtleDeclaredPrefixes(g *rdflibgo.Graph, content []byte) map[string]string
 	return prefixes
 }
 
-func validateTurtleFile(path string, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
+func parseTurtleFile(path string, base string) (*rdfDocument, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("build: read %s: %w", path, err)
@@ -66,8 +66,5 @@ func validateTurtleFile(path string, vocabsToReplace map[string]string, base str
 	}
 
 	ctx := RdfContext{Prefixes: turtleDeclaredPrefixes(g, content)}
-	if err := validateTerms(path, terms, ctx, vocabsToReplace, base); err != nil {
-		return nil, err
-	}
-	return g, nil
+	return &rdfDocument{graph: g, ctx: ctx, terms: terms}, nil
 }

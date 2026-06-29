@@ -23,13 +23,32 @@ type UsedTermsInFile struct {
 	line int
 }
 
+type rdfDocument struct {
+	graph *rdflibgo.Graph
+	ctx   RdfContext
+	terms []UsedTermsInFile
+}
+
+// ValidateRDFFile parses a Turtle or JSON-LD file and checks that every used
+// vocabulary term is defined by the vocabulary declared for its prefix.
 func ValidateRDFFile(path string, vocabsToReplace map[string]string, base string) (*rdflibgo.Graph, error) {
+	var (
+		doc *rdfDocument
+		err error
+	)
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".ttl", ".turtle":
-		return validateTurtleFile(path, vocabsToReplace, base)
+		doc, err = parseTurtleFile(path, base)
 	default:
-		return validateJSONLDFile(path, vocabsToReplace, base)
+		doc, err = parseJSONLDFile(path, base)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if err := validateTerms(path, doc.terms, doc.ctx, vocabsToReplace, base); err != nil {
+		return nil, err
+	}
+	return doc.graph, nil
 }
 
 func displayTerm(iri string, ctx RdfContext) (string, bool) {
@@ -54,6 +73,7 @@ func validateTerms(path string, terms []UsedTermsInFile, rdfPrefixes RdfContext,
 		cache:    map[string]Vocabulary{},
 		failures: map[string]error{},
 		base:     base,
+		fetch:    fetchVocabularyDocument,
 	}
 
 	var errs MultiError
@@ -63,7 +83,7 @@ func validateTerms(path string, terms []UsedTermsInFile, rdfPrefixes RdfContext,
 		if !ok {
 			continue
 		}
-		defined, err := vocabs.isDefined(term.iri, rdfPrefixes)
+		defined, err := vocabs.isDefined(term.iri, rdfPrefixes, vocabsToReplace)
 		if err != nil {
 			logKey := term.iri + "\x00" + err.Error()
 			if !loggedVocabularyErrors[logKey] {

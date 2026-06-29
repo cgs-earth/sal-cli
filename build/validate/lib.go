@@ -26,6 +26,16 @@ func (e vocabularyLookupError) Error() string {
 	return fmt.Sprintf("%s:%d: failed to check vocabulary for %s: %v", e.Path, e.Line, e.Term, e.Err)
 }
 
+type missingTypeError struct {
+	Path string
+	Line int
+	IRI  string
+}
+
+func (e missingTypeError) Error() string {
+	return fmt.Sprintf("%s:%d: %s must have an rdf:type definition", e.Path, e.Line, e.IRI)
+}
+
 type MultiError []error
 
 func (e MultiError) Error() string {
