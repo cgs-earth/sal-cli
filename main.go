@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cgs-earth/sal/build"
+	"github.com/cgs-earth/sal/clean"
 	"github.com/cgs-earth/sal/initialization"
 	"github.com/cgs-earth/sal/load"
 	"github.com/cgs-earth/sal/query"
@@ -22,6 +23,7 @@ type args struct {
 	Load  *load.LoadCmd           `arg:"subcommand:load" help:"Load N-Quads gzip files into a local Iceberg triples table."`
 	Build *build.BuildCmd         `arg:"subcommand:build" help:"Build a vocabulary."`
 	Query *query.QueryCmd         `arg:"subcommand:query" help:"Use duckdb to query a built SAL data product."`
+	Clean *clean.CleanCmd         `arg:"subcommand:clean" help:"Clean build artifacts produced by a SAL project."`
 }
 
 func (args) Description() string {
@@ -60,6 +62,8 @@ func main() {
 		err = initialization.Run(cli.Init)
 	case cli.Query != nil:
 		err = query.Run(cli.Query)
+	case cli.Clean != nil:
+		err = clean.Run(cli.Clean)
 	}
 	if err != nil {
 		slog.Error(err.Error())
