@@ -20,6 +20,8 @@ const (
 	GraphExportFormatIceberg GraphExportFormat = "iceberg"
 )
 
+// Export graph takes in a rdflib format graph struct and
+// serializes it to disk in the specified format
 func ExportGraph(graph *rdflibgo.Graph, format GraphExportFormat) error {
 
 	switch format {

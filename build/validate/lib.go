@@ -48,3 +48,7 @@ func (e MultiError) Error() string {
 	}
 	return sb.String()
 }
+
+func (e MultiError) Unwrap() []error {
+	return []error(e)
+}

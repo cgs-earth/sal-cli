@@ -104,7 +104,7 @@ func TestValidateJSONLDFileSkipsRelativeIDUnderBase(t *testing.T) {
 func TestValidateJSONLDFileRejectsLocalIDWithoutType(t *testing.T) {
 	path := writeJSONLDTestFile(t, `{
 		"@context": "http://schema.org/",
-		"@id": "Bob",
+		"@id": "Jane",
 		"name": "Jane Doe",
 		"jobTitle": "Professor",
 		"telephone": "(425) 123-4567",
@@ -114,5 +114,7 @@ func TestValidateJSONLDFileRejectsLocalIDWithoutType(t *testing.T) {
 	_, err := ValidateRDFFile(path, nil, testBase)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), testBase+"Bob must have an rdf:type definition")
+	var missingTypeErr missingTypeError
+	require.ErrorAs(t, err, &missingTypeErr)
+	require.Equal(t, testBase+"Jane", missingTypeErr.IRI)
 }

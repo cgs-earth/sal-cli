@@ -9,7 +9,23 @@ import (
 	rdflibgo "github.com/tggo/goRDFlib"
 )
 
-// NewTermsHaveClassDefinitions verifies local resources have rdf:type triples and
+type TermLacksTypeDefinitionErr struct {
+	iri string
+}
+
+func (t TermLacksTypeDefinitionErr) Error() string {
+	return fmt.Sprintf("%s requires a rdf:type definition but it was not found", t.iri)
+}
+
+type TermIsNotASubClassOfRDFSClassErr struct {
+	iri string
+}
+
+func (t TermIsNotASubClassOfRDFSClassErr) Error() string {
+	return fmt.Sprintf("%s must be a subclass of rdfs:Class but the type definition was not a subclass of rdfs:Class", t.iri)
+}
+
+// NewTermsHaveClassDefinitions verifies local resources have rdf:type definition triples and
 // local rdf:type values are declared as subclasses of rdfs:Class.
 func NewTermsHaveClassDefinitions(g *rdflibgo.Graph) error {
 	baseForRelativePaths, err := pkg.DefaultSalBase()
@@ -47,12 +63,14 @@ func NewTermsHaveClassDefinitions(g *rdflibgo.Graph) error {
 	var errs validate.MultiError
 	for iri := range localSubjects {
 		if !typedSubjects[iri] {
-			errs = append(errs, fmt.Errorf("%s must have an rdf:type definition", iri))
+			errs = append(errs, TermLacksTypeDefinitionErr{iri: iri})
 		}
 	}
 	for iri := range localTypes {
+		// we use an empty map here to start the recursion search. this is
+		// essentially an accumulator cache.
 		if !isSubClassOfRDFSClass(iri, subClasses, map[string]bool{}) {
-			errs = append(errs, fmt.Errorf("%s must be defined as a subclass of rdfs:Class", iri))
+			errs = append(errs, TermIsNotASubClassOfRDFSClassErr{iri: iri})
 		}
 	}
 	if len(errs) > 0 {
@@ -61,7 +79,7 @@ func NewTermsHaveClassDefinitions(g *rdflibgo.Graph) error {
 	return nil
 }
 
-// isSubClassOfRDFSClass follows rdfs:subClassOf links until it reaches rdfs:Class.
+// isSubClassOfRDFSClass recursively follows rdfs:subClassOf links until it reaches rdfs:Class.
 func isSubClassOfRDFSClass(iri string, subClasses map[string][]rdflibgo.URIRef, seen map[string]bool) bool {
 	if seen[iri] {
 		return false
