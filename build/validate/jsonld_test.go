@@ -34,6 +34,7 @@ func TestValidateJSONLDFileRejectsUndefinedSchemaOrgProperty(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "undefined term")
 	require.Contains(t, err.Error(), "namee")
+	require.Contains(t, err.Error(), path+":5:", "The failing term should be on line number 5")
 }
 
 func TestValidateJSONLDFileAcceptsInlineVocabDefinedSchemaTerms(t *testing.T) {
@@ -84,6 +85,25 @@ func TestValidateJSONLDFileRejectsUndefinedCompactProperty(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "undefined term")
 	require.Contains(t, err.Error(), "schema:namee")
+	require.Contains(t, err.Error(), path+":7:")
+}
+
+func TestValidateJSONLDFileReportsUndefinedTypeLine(t *testing.T) {
+	path := writeJSONLDTestFile(t, `{
+		"@context": {
+			"@vocab": "https://schema.org/"
+		},
+		"@type": "Persson",
+		"@id": "Bob",
+		"name": "Jane Doe"
+	}`)
+
+	_, err := ValidateRDFFile(path, nil, testBase)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "undefined term")
+	require.Contains(t, err.Error(), "Persson")
+	require.Contains(t, err.Error(), path+":5:")
 }
 
 func TestValidateJSONLDFileSkipsRelativeIDUnderBase(t *testing.T) {

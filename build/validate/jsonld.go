@@ -55,7 +55,11 @@ func parseJSONLDFile(path string, base string) (*rdfDocument, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid JSON-LD: %w", path, err)
 	}
-	terms = append(terms, collectJSONLDSourceTerms(doc, ctx)...)
+	sourceTerms, err := collectJSONLDSourceTerms(content, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: invalid JSON-LD: %w", path, err)
+	}
+	terms = append(terms, sourceTerms...)
 	if err := validateJSONLDLocalTypes(path, doc, base); err != nil {
 		return nil, err
 	}
@@ -223,50 +227,141 @@ func contextTermBase(value any) (string, bool) {
 	return "", false
 }
 
-// collectJSONLDSourceTerms resolves source-level compact terms so validation
-// catches JSON-LD keys that expansion drops because they are not defined.
-func collectJSONLDSourceTerms(doc any, ctx RdfContext) []UsedTermsInFile {
+// collectJSONLDSourceTerms resolves source-level compact terms with token
+// offsets so validation catches JSON-LD keys that expansion drops.
+func collectJSONLDSourceTerms(content []byte, ctx RdfContext) ([]UsedTermsInFile, error) {
 	var terms []UsedTermsInFile
-	collectJSONLDSourceTermsFromNode(doc, ctx, &terms)
-	return terms
+	dec := json.NewDecoder(bytes.NewReader(content))
+	if err := collectJSONLDSourceValue(dec, content, ctx, &terms); err != nil {
+		return nil, err
+	}
+	return terms, nil
 }
 
-func collectJSONLDSourceTermsFromNode(node any, ctx RdfContext, terms *[]UsedTermsInFile) {
-	switch n := node.(type) {
-	case map[string]any:
-		for key, value := range n {
-			switch {
-			case key == "@context":
-				continue
-			case key == "@type":
-				appendJSONLDValueTerms(value, ctx, terms)
-			case strings.HasPrefix(key, "@"):
-				continue
-			default:
-				if iri, ok := expandJSONLDTerm(key, ctx); ok {
-					*terms = append(*terms, UsedTermsInFile{iri: iri, line: 1})
+func collectJSONLDSourceValue(dec *json.Decoder, content []byte, ctx RdfContext, terms *[]UsedTermsInFile) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok := tok.(json.Delim)
+	if !ok {
+		return nil
+	}
+	switch delim {
+	case '{':
+		for dec.More() {
+			keyTok, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			key, ok := keyTok.(string)
+			if !ok {
+				return fmt.Errorf("expected object key")
+			}
+			keyLine := jsonOffsetLine(content, dec.InputOffset())
+			switch key {
+			case "@context":
+				if err := skipJSONValue(dec); err != nil {
+					return err
 				}
-				collectJSONLDSourceTermsFromNode(value, ctx, terms)
+			case "@type":
+				if err := collectJSONLDTypeValue(dec, content, ctx, terms); err != nil {
+					return err
+				}
+			default:
+				if !strings.HasPrefix(key, "@") {
+					if iri, ok := expandJSONLDTerm(key, ctx); ok {
+						*terms = append(*terms, UsedTermsInFile{iri: iri, line: keyLine})
+					}
+				}
+				if err := collectJSONLDSourceValue(dec, content, ctx, terms); err != nil {
+					return err
+				}
 			}
 		}
-	case []any:
-		for _, item := range n {
-			collectJSONLDSourceTermsFromNode(item, ctx, terms)
+		_, err := dec.Token()
+		return err
+	case '[':
+		for dec.More() {
+			if err := collectJSONLDSourceValue(dec, content, ctx, terms); err != nil {
+				return err
+			}
 		}
+		_, err := dec.Token()
+		return err
 	}
+	return nil
 }
 
-func appendJSONLDValueTerms(value any, ctx RdfContext, terms *[]UsedTermsInFile) {
-	switch v := value.(type) {
+func collectJSONLDTypeValue(dec *json.Decoder, content []byte, ctx RdfContext, terms *[]UsedTermsInFile) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	switch v := tok.(type) {
 	case string:
 		if iri, ok := expandJSONLDTerm(v, ctx); ok {
-			*terms = append(*terms, UsedTermsInFile{iri: iri, line: 1})
+			*terms = append(*terms, UsedTermsInFile{iri: iri, line: jsonOffsetLine(content, dec.InputOffset())})
 		}
-	case []any:
-		for _, item := range v {
-			appendJSONLDValueTerms(item, ctx, terms)
+	case json.Delim:
+		switch v {
+		case '[':
+			for dec.More() {
+				if err := collectJSONLDTypeValue(dec, content, ctx, terms); err != nil {
+					return err
+				}
+			}
+			_, err := dec.Token()
+			return err
+		case '{':
+			if err := skipJSONObjectAfterOpen(dec); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
+}
+
+func skipJSONValue(dec *json.Decoder) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if delim, ok := tok.(json.Delim); ok {
+		switch delim {
+		case '{':
+			return skipJSONObjectAfterOpen(dec)
+		case '[':
+			for dec.More() {
+				if err := skipJSONValue(dec); err != nil {
+					return err
+				}
+			}
+			_, err := dec.Token()
+			return err
+		}
+	}
+	return nil
+}
+
+func skipJSONObjectAfterOpen(dec *json.Decoder) error {
+	for dec.More() {
+		if _, err := dec.Token(); err != nil {
+			return err
+		}
+		if err := skipJSONValue(dec); err != nil {
+			return err
+		}
+	}
+	_, err := dec.Token()
+	return err
+}
+
+func jsonOffsetLine(content []byte, offset int64) int {
+	if offset <= 0 {
+		return 1
+	}
+	return 1 + bytes.Count(content[:min(int(offset), len(content))], []byte("\n"))
 }
 
 func expandJSONLDTerm(term string, ctx RdfContext) (string, bool) {
