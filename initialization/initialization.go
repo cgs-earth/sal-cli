@@ -87,6 +87,32 @@ func Run(cmd *InitCmd) error {
 	if err != nil {
 		return err
 	}
+
+	// check if .gitignore is present in the cwd, if not create it and add .sal/data to it
+	gitignorePath := filepath.Join(cwd, ".gitignore")
+	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+		err = os.WriteFile(gitignorePath, []byte(".sal/data\n"), 0644)
+		if err != nil {
+			return err
+		}
+	} else if err == nil {
+		// check if .sal/data is already in .gitignore
+		content, err := os.ReadFile(gitignorePath)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(content), ".sal/data") {
+			f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = f.Close() }()
+			if _, err := f.WriteString("\n.sal/data\n"); err != nil {
+				return err
+			}
+		}
+	}
+
 	slog.Info("SAL project initialized at " + cwd)
 	return nil
 }
