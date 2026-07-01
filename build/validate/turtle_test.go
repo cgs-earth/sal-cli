@@ -105,3 +105,22 @@ func TestValidateTurtleFileSkipsRelativeSubjectUnderBase(t *testing.T) {
 
 	require.NoError(t, err)
 }
+
+// func TestOntologyWithSalModuleReference(t *testing.T) {
+// 	path := writeTurtleTestFile(t, `
+// 		@prefix history: <salmodule://www.github.com/test/history-getter/> .
+// 		@prefix sal: <https://w3id.org/datacequia/sal#> .
+
+// 		# TODO update when this changes
+// 		# Define a new term
+// 		<EducationFinder> a history:EducationalHistoryFinder ;
+// 		# this is known from the type of EducationalHistoryFinder
+// 		# but is listed here to be explicit
+// 			a sal:NodeProcessor ;
+// 			sal:WantOutbound "https://google.com" .
+// 	`)
+
+// 	_, err := ValidateRDFFile(path, nil, testBase)
+
+// 	require.NoError(t, err)
+// }

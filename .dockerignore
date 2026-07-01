@@ -1,0 +1,7 @@
+# Ignore any local rdf data artifacts when building the sal cli
+**/*.nq.gz
+.sal/data/**
+*.md
+Dockerfile
+.dockerignore
+.git

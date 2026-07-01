@@ -11,6 +11,7 @@ import (
 	"github.com/cgs-earth/sal/initialization"
 	"github.com/cgs-earth/sal/load"
 	"github.com/cgs-earth/sal/query"
+	"github.com/cgs-earth/sal/salmodule"
 
 	"github.com/alexflint/go-arg"
 	"github.com/lmittmann/tint"
@@ -19,11 +20,12 @@ import (
 // All subcommands that sal supports. These should be in a useful order as
 // the order changes how the CLI presents them in the help message.
 type args struct {
-	Init  *initialization.InitCmd `arg:"subcommand:init" help:"Initialize a SAL project."`
-	Load  *load.LoadCmd           `arg:"subcommand:load" help:"Load N-Quads gzip files into a local Iceberg triples table."`
-	Build *build.BuildCmd         `arg:"subcommand:build" help:"Build a vocabulary."`
-	Query *query.QueryCmd         `arg:"subcommand:query" help:"Use duckdb to query a built SAL data product."`
-	Clean *clean.CleanCmd         `arg:"subcommand:clean" help:"Clean build artifacts produced by a SAL project."`
+	Init      *initialization.InitCmd `arg:"subcommand:init" help:"Initialize a SAL project."`
+	Load      *load.LoadCmd           `arg:"subcommand:load" help:"Load N-Quads gzip files into a local Iceberg triples table."`
+	Build     *build.BuildCmd         `arg:"subcommand:build" help:"Build a vocabulary."`
+	Query     *query.QueryCmd         `arg:"subcommand:query" help:"Use duckdb to query a built SAL data product."`
+	Clean     *clean.CleanCmd         `arg:"subcommand:clean" help:"Clean build artifacts produced by a SAL project."`
+	SalModule *salmodule.SalModuleCmd `arg:"subcommand:salmodule" help:"Output salmodule information about this project."`
 }
 
 func (args) Description() string {
@@ -64,6 +66,8 @@ func main() {
 		err = query.Run(cli.Query)
 	case cli.Clean != nil:
 		err = clean.Run(cli.Clean)
+	case cli.SalModule != nil:
+		err = salmodule.Run(cli.SalModule)
 	}
 	if err != nil {
 		slog.Error(err.Error())
