@@ -1,0 +1,3 @@
+# NOTE this file is all a placeholder; this will be replaced and filled in
+# with an actual sal ontolgy once it is present
+@prefix sal: <https://w3id.org/datacequia/sal#> .
